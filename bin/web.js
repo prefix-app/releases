@@ -6,7 +6,21 @@ var nuts = require('../');
 
 var app = express();
 
-var apiAuth =  {
+var cors = require('cors')
+var whitelist = ['https://releases.prefix.app', 'http://releases.prefix.app', 'https://prefix.app', 'https://www.prefix.app', 'http://www.prefix.app', 'http://prefix.app']
+var corsOptionsDelegate = function (req, callback) {
+    var corsOptions;
+    if (whitelist.indexOf(req.header('Origin')) !== -1) {
+        corsOptions = { origin: true } // reflect (enable) the requested origin in the CORS response
+    } else {
+        corsOptions = { origin: false } // disable CORS for this request
+    }
+    callback(null, corsOptions) // callback expects two parameters: error and options
+}
+
+app.use(cors(corsOptionsDelegate));
+
+var apiAuth = {
     username: process.env.API_USERNAME,
     password: process.env.API_PASSWORD
 };
@@ -30,7 +44,7 @@ var myNuts = nuts.Nuts({
 });
 
 // Control access to API
-myNuts.before('api', function(access, next) {
+myNuts.before('api', function (access, next) {
     if (!apiAuth.username) return next();
 
     function unauthorized() {
@@ -50,12 +64,12 @@ myNuts.before('api', function(access, next) {
 });
 
 // Log download
-myNuts.before('download', function(download, next) {
+myNuts.before('download', function (download, next) {
     console.log('download', download.platform.filename, "for version", download.version.tag, "on channel", download.version.channel, "for", download.platform.type);
 
     next();
 });
-myNuts.after('download', function(download, next) {
+myNuts.after('download', function (download, next) {
     console.log('downloaded', download.platform.filename, "for version", download.version.tag, "on channel", download.version.channel, "for", download.platform.type);
 
     // Track on segment if enabled
@@ -64,7 +78,7 @@ myNuts.after('download', function(download, next) {
 
         analytics.track({
             event: downloadEvent,
-            anonymousId: userId? null : uuid.v4(),
+            anonymousId: userId ? null : uuid.v4(),
             userId: userId,
             properties: {
                 version: download.version.tag,
@@ -91,10 +105,10 @@ if (process.env.TRUST_PROXY) {
 app.use(myNuts.router);
 
 // Error handling
-app.use(function(req, res, next) {
+app.use(function (req, res, next) {
     res.status(404).send("Page not found");
 });
-app.use(function(err, req, res, next) {
+app.use(function (err, req, res, next) {
     var msg = err.message || err;
     var code = 500;
 
@@ -102,13 +116,13 @@ app.use(function(err, req, res, next) {
 
     // Return error
     res.format({
-        'text/plain': function(){
+        'text/plain': function () {
             res.status(code).send(msg);
         },
         'text/html': function () {
             res.status(code).send(msg);
         },
-        'application/json': function (){
+        'application/json': function () {
             res.status(code).send({
                 'error': msg,
                 'code': code
@@ -119,15 +133,15 @@ app.use(function(err, req, res, next) {
 
 myNuts.init()
 
-// Start the HTTP server
-.then(function() {
-    var server = app.listen(process.env.PORT || 5000, function () {
-        var host = server.address().address;
-        var port = server.address().port;
+    // Start the HTTP server
+    .then(function () {
+        var server = app.listen(process.env.PORT || 5000, function () {
+            var host = server.address().address;
+            var port = server.address().port;
 
-        console.log('Listening at http://%s:%s', host, port);
+            console.log('Listening at http://%s:%s', host, port);
+        });
+    }, function (err) {
+        console.log(err.stack || err);
+        process.exit(1);
     });
-}, function(err) {
-    console.log(err.stack || err);
-    process.exit(1);
-});
