@@ -7,7 +7,7 @@ var nuts = require('../');
 var app = express();
 
 var cors = require('cors')
-var whitelist = ['https://releases.prefix.app', 'http://releases.prefix.app', 'https://prefix.app', 'https://www.prefix.app', 'http://www.prefix.app', 'http://prefix.app']
+var whitelist = ['https://releases.prefix.app', 'http://releases.prefix.app', 'https://prefix.app', 'https://www.prefix.app', 'http://www.prefix.app', 'http://prefix.app', 'http://manual.prefix.app', 'https://manual.prefix.app', 'http://www.manual.prefix.app', 'https://www.manual.prefix.app']
 var corsOptionsDelegate = function (req, callback) {
     var corsOptions;
     if (whitelist.indexOf(req.header('Origin')) !== -1) {
